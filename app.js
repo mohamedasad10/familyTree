@@ -29,114 +29,158 @@ app.use(express.json());
 
 // Serve the HTML form when visiting the homepage
 app.get('/', async (req, res) => {
-  try {
-    const people = await Person.find().select('name'); // Fetch all person names
-    const peopleOptions = people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Family Tree App</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          label, input, button, select { display: block; margin: 10px 0; }
-          .parent-container, .children-container { margin-bottom: 10px; }
-        </style>
-      </head>
-      <body>
-        <h1>Family Tree - Add a Person</h1>
-
-        <form action="/add" method="POST">
-          <label for="name">Person's Name:</label>
-          <input type="text" name="name" required>
-
-          <div id="parents">
-            <label>Parents' Names:</label>
-            <div class="parent-container">
-              <input type="text" name="parents[]" placeholder="Parent's Name">
-            </div>
-            <button type="button" onclick="addParentField()">Add Parent</button>
-          </div>
-
-          <div id="children">
-            <label>Children's Names:</label>
-            <div class="children-container">
-              <input type="text" name="children[]" placeholder="Child's Name">
-            </div>
-            <button type="button" onclick="addChildField()">Add Child</button>
-          </div>
-
-          <button type="submit">Add Person</button>
-        </form>
-
-        <h1>View Person</h1>
-        <form action="/view" method="GET">
-          <label for="viewName">Select a Person:</label>
-          <select name="name" required>
-            <option value="" disabled selected>Select a person</option>
-            ${peopleOptions}
-          </select>
-          <button type="submit">View Person</button>
-        </form>
-
-        <h1>Delete Person</h1>
-        <form id="deleteForm">
-          <label for="deleteName">Select a Person to Delete:</label>
-          <select id="deleteName" name="name" required>
-            <option value="" disabled selected>Select a person</option>
-            ${peopleOptions}
-          </select>
-          <button type="submit">Delete Person</button>
-        </form>
-
-        <script>
-          function addParentField() {
-            const container = document.querySelector('.parent-container');
-            const newInput = document.createElement('input');
-            newInput.type = 'text';
-            newInput.name = 'parents[]';
-            newInput.placeholder = "Parent's Name";
-            container.appendChild(newInput);
-          }
-
-          function addChildField() {
-            const container = document.querySelector('.children-container');
-            const newInput = document.createElement('input');
-            newInput.type = 'text';
-            newInput.name = 'children[]';
-            newInput.placeholder = "Child's Name";
-            container.appendChild(newInput);
-          }
-
-          document.getElementById('deleteForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            const name = document.getElementById('deleteName').value;
-
-            try {
-              const response = await fetch(\`http://localhost:5000/api/person/delete/\${name}\`, {
-                method: 'DELETE',
-              });
-
-              const result = await response.json();
-              alert(result.message || 'Person deleted successfully!');
-              location.reload(); // Reload to update the dropdowns
-            } catch (error) {
-              console.error('Error:', error);
-              alert('Something went wrong. Please try again.');
+    try {
+      const people = await Person.find().select('name'); // Fetch all person names
+      const peopleOptions = people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  
+      res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Family Tree App</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <style>
+            @keyframes fadeIn {
+              from { opacity: 0; transform: translateY(10px); }
+              to { opacity: 1; transform: translateY(0); }
             }
-          });
-        </script>
-      </body>
-      </html>
-    `);
-  } catch (error) {
-    console.error('Error loading homepage:', error);
-    res.status(500).send('Internal Server Error');
-  }
-});
+            .fade-in { animation: fadeIn 0.5s ease-in-out; }
+          </style>
+        </head>
+        <body class="bg-gradient-to-br from-green-50 to-green-100 min-h-screen p-8">
+          <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <header class="text-center mb-12 fade-in">
+              <h1 class="text-5xl font-bold text-green-900 mb-4">Family Tree App</h1>
+              <p class="text-lg text-green-700">Create and manage your family tree with ease.</p>
+            </header>
+  
+            <!-- Add Person Form -->
+            <div class="bg-white p-8 rounded-2xl shadow-lg mb-8 transform transition-all hover:scale-105 fade-in">
+              <h2 class="text-2xl font-semibold text-green-900 mb-6">Add a Person</h2>
+              <form action="/add" method="POST" class="space-y-6">
+                <div>
+                  <label for="name" class="block text-sm font-medium text-green-700">Person's Name</label>
+                  <input type="text" name="name" required class="mt-1 block w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all">
+                </div>
+  
+                <div id="parents">
+                  <label class="block text-sm font-medium text-green-700">Parents</label>
+                  <div class="parent-container space-y-3">
+                    <input type="text" name="parents[]" placeholder="Parent's Name" class="w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all">
+                  </div>
+                  <button type="button" onclick="addParentField()" class="mt-3 inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Add Parent
+                  </button>
+                </div>
+  
+                <div id="children">
+                  <label class="block text-sm font-medium text-green-700">Children</label>
+                  <div class="children-container space-y-3">
+                    <input type="text" name="children[]" placeholder="Child's Name" class="w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all">
+                  </div>
+                  <button type="button" onclick="addChildField()" class="mt-3 inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Add Child
+                  </button>
+                </div>
+  
+                <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all">
+                  Add Person
+                </button>
+              </form>
+            </div>
+  
+            <!-- View Person Form -->
+            <div class="bg-white p-8 rounded-2xl shadow-lg mb-8 transform transition-all hover:scale-105 fade-in">
+              <h2 class="text-2xl font-semibold text-green-900 mb-6">View a Person</h2>
+              <form action="/view" method="GET" class="space-y-6">
+                <div>
+                  <label for="viewName" class="block text-sm font-medium text-green-700">Search or Select a Person</label>
+                  <select name="name" id="dropdownName" class="mt-1 block w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all">
+                    <option value="" disabled selected>Select a person</option>
+                    ${peopleOptions}
+                  </select>
+                  <input type="text" name="name" id="searchName" placeholder="Enter name" class="mt-1 block w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all">
+                </div>
+                <button type="submit" class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all">
+                  View Person
+                </button>
+              </form>
+            </div>
+  
+            <!-- Delete Person Form -->
+            <div class="bg-white p-8 rounded-2xl shadow-lg transform transition-all hover:scale-105 fade-in">
+              <h2 class="text-2xl font-semibold text-green-900 mb-6">Delete a Person</h2>
+              <form id="deleteForm" class="space-y-6">
+                <div>
+                  <label for="deleteName" class="block text-sm font-medium text-green-700">Select a Person to Delete</label>
+                  <select id="deleteName" name="name" required class="mt-1 block w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all">
+                    <option value="" disabled selected>Select a person</option>
+                    ${peopleOptions}
+                  </select>
+                </div>
+                <button type="submit" class="w-full bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all">
+                  Delete Person
+                </button>
+              </form>
+            </div>
+          </div>
+  
+          <script>
+            function addParentField() {
+              const container = document.querySelector('.parent-container');
+              const newInput = document.createElement('input');
+              newInput.type = 'text';
+              newInput.name = 'parents[]';
+              newInput.placeholder = "Parent's Name";
+              newInput.className = 'w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all';
+              container.appendChild(newInput);
+            }
+  
+            function addChildField() {
+              const container = document.querySelector('.children-container');
+              const newInput = document.createElement('input');
+              newInput.type = 'text';
+              newInput.name = 'children[]';
+              newInput.placeholder = "Child's Name";
+              newInput.className = 'w-full px-4 py-2 border border-green-300 rounded-lg shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all';
+              container.appendChild(newInput);
+            }
+  
+            document.getElementById('deleteForm').addEventListener('submit', async function(event) {
+              event.preventDefault();
+              const name = document.getElementById('deleteName').value;
+  
+              try {
+                const response = await fetch(\`http://localhost:5000/api/person/delete/\${name}\`, {
+                  method: 'DELETE',
+                });
+  
+                const result = await response.json();
+                alert(result.message || 'Person deleted successfully!');
+                location.reload(); // Reload to update the dropdowns
+              } catch (error) {
+                console.error('Error:', error);
+                alert('Something went wrong. Please try again.');
+              }
+            });
+          </script>
+        </body>
+        </html>
+      `);
+    } catch (error) {
+      console.error('Error loading homepage:', error);
+      res.status(500).send('Internal Server Error');
+    }
+  });
 
 // Handle Adding a Person
 app.post('/add', async (req, res) => {
