@@ -30,8 +30,28 @@ app.use(express.json());
 // Serve the HTML form when visiting the homepage
 app.get('/', async (req, res) => {
     try {
-      const people = await Person.find().select('name'); // Fetch all person names
+      const people = await Person.find()
+        .populate('parents', 'name')
+        .populate('children', 'name'); // Fetch all people with their parents and children
+  
       const peopleOptions = people.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+  
+      // Generate HTML for all people
+      const peopleHTML = people.map(person => `
+        <div class="bg-white p-6 rounded-2xl shadow-lg transform transition-all hover:scale-105 fade-in">
+          <h3 class="text-xl font-semibold text-green-900 mb-4">${person.name}</h3>
+          <div class="space-y-2">
+            <div>
+              <span class="text-sm font-medium text-green-700">Parents:</span>
+              <p class="text-green-900">${person.parents.map(p => p.name).join(', ') || 'None'}</p>
+            </div>
+            <div>
+              <span class="text-sm font-medium text-green-700">Children:</span>
+              <p class="text-green-900">${person.children.map(c => c.name).join(', ') || 'None'}</p>
+            </div>
+          </div>
+        </div>
+      `).join('');
   
       res.send(`
         <!DOCTYPE html>
@@ -50,12 +70,14 @@ app.get('/', async (req, res) => {
           </style>
         </head>
         <body class="bg-gradient-to-br from-green-50 to-green-100 min-h-screen p-8">
-          <div class="max-w-4xl mx-auto">
+          <div class="max-w-6xl mx-auto">
             <!-- Header -->
             <header class="text-center mb-12 fade-in">
               <h1 class="text-5xl font-bold text-green-900 mb-4">Family Tree App</h1>
               <p class="text-lg text-green-700">Create and manage your family tree with ease.</p>
             </header>
+  
+            
   
             <!-- Add Person Form -->
             <div class="bg-white p-8 rounded-2xl shadow-lg mb-8 transform transition-all hover:scale-105 fade-in">
@@ -133,6 +155,18 @@ app.get('/', async (req, res) => {
               </form>
             </div>
           </div>
+
+          <div>
+          <br>
+          <br>
+          </div>
+
+          <div class="bg-white p-8 rounded-2xl shadow-lg mb-8 transform transition-all hover:scale-105 fade-in">
+              <h2 class="text-2xl font-semibold text-green-900 mb-6">Display People</h2>
+          <!-- Display All People -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              ${peopleHTML}
+            </div>
   
           <script>
             function addParentField() {
