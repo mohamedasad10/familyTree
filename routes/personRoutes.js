@@ -65,6 +65,51 @@ router.post('/add', async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
+
+  // Route to delete a person
+router.delete('/delete/:name', async (req, res) => {
+    try {
+      const personName = req.params.name;
+  
+      // Find the person to be deleted
+      const person = await Person.findOne({ name: personName });
+  
+      if (!person) {
+        return res.status(404).json({ message: 'Person not found' });
+      }
+  
+      // Remove the person from their parents' children list
+      if (person.parents.length > 0) {
+        for (const parentId of person.parents) {
+          const parent = await Person.findById(parentId);
+          if (parent) {
+            parent.children = parent.children.filter(child => !child.equals(person._id));
+            await parent.save();
+          }
+        }
+      }
+  
+      // Remove the person from their children's parents list
+      if (person.children.length > 0) {
+        for (const childId of person.children) {
+          const child = await Person.findById(childId);
+          if (child) {
+            child.parents = child.parents.filter(parent => !parent.equals(person._id));
+            await child.save();
+          }
+        }
+      }
+  
+      // Delete the person
+      await person.remove();
+  
+      res.status(200).json({ message: `${personName} has been deleted successfully` });
+    } catch (error) {
+      console.error('Error deleting person:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
   
 
 module.exports = router;

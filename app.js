@@ -29,79 +29,101 @@ app.use(express.json());
 
 // Serve the HTML form when visiting the homepage
 app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Family Tree App</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        label, input, button { display: block; margin: 10px 0; }
-        .parent-container, .children-container { margin-bottom: 10px; }
-      </style>
-    </head>
-    <body>
-      <h1>Family Tree - Add a Person</h1>
-
-      <form action="/add" method="POST">
-        <label for="name">Person's Name:</label>
-        <input type="text" name="name" required>
-
-        <div id="parents">
-          <label>Parents' Names:</label>
-          <div class="parent-container">
-            <input type="text" name="parents[]" placeholder="Parent's Name">
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Family Tree App</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          label, input, button { display: block; margin: 10px 0; }
+          .parent-container, .children-container { margin-bottom: 10px; }
+        </style>
+      </head>
+      <body>
+        <h1>Family Tree - Add a Person</h1>
+  
+        <form action="/add" method="POST">
+          <label for="name">Person's Name:</label>
+          <input type="text" name="name" required>
+  
+          <div id="parents">
+            <label>Parents' Names:</label>
+            <div class="parent-container">
+              <input type="text" name="parents[]" placeholder="Parent's Name">
+            </div>
+            <button type="button" onclick="addParentField()">Add Parent</button>
           </div>
-          <button type="button" onclick="addParentField()">Add Parent</button>
-        </div>
-
-        <div id="children">
-          <label>Children's Names:</label>
-          <div class="children-container">
-            <input type="text" name="children[]" placeholder="Child's Name">
+  
+          <div id="children">
+            <label>Children's Names:</label>
+            <div class="children-container">
+              <input type="text" name="children[]" placeholder="Child's Name">
+            </div>
+            <button type="button" onclick="addChildField()">Add Child</button>
           </div>
-          <button type="button" onclick="addChildField()">Add Child</button>
-        </div>
-
-        <button type="submit">Add Person</button>
-      </form>
-
-      <h1>View Person</h1>
-      <form action="/view" method="GET">
-        <label for="viewName">Enter Person's Name:</label>
-        <input type="text" name="name" required>
-        <button type="submit">View Person</button>
-      </form>
-
-      <h2>Person Details:</h2>
-      <div id="personDetails"></div>
-
-      <script>
-        function addParentField() {
-          const container = document.querySelector('.parent-container');
-          const newInput = document.createElement('input');
-          newInput.type = 'text';
-          newInput.name = 'parents[]';
-          newInput.placeholder = "Parent's Name";
-          container.appendChild(newInput);
-        }
-
-        function addChildField() {
-          const container = document.querySelector('.children-container');
-          const newInput = document.createElement('input');
-          newInput.type = 'text';
-          newInput.name = 'children[]';
-          newInput.placeholder = "Child's Name";
-          container.appendChild(newInput);
-        }
-      </script>
-    </body>
-    </html>
-  `);
-});
-
+  
+          <button type="submit">Add Person</button>
+        </form>
+  
+        <h1>View Person</h1>
+        <form action="/view" method="GET">
+          <label for="viewName">Enter Person's Name:</label>
+          <input type="text" name="name" required>
+          <button type="submit">View Person</button>
+        </form>
+  
+        <h1>Delete Person</h1>
+        <form id="deleteForm">
+          <label for="deleteName">Enter Person's Name to Delete:</label>
+          <input type="text" id="deleteName" name="name" required>
+          <button type="submit">Delete Person</button>
+        </form>
+  
+        <script>
+          function addParentField() {
+            const container = document.querySelector('.parent-container');
+            const newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.name = 'parents[]';
+            newInput.placeholder = "Parent's Name";
+            container.appendChild(newInput);
+          }
+  
+          function addChildField() {
+            const container = document.querySelector('.children-container');
+            const newInput = document.createElement('input');
+            newInput.type = 'text';
+            newInput.name = 'children[]';
+            newInput.placeholder = "Child's Name";
+            container.appendChild(newInput);
+          }
+  
+          document.getElementById('deleteForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const name = document.getElementById('deleteName').value;
+  
+            try {
+              const response = await fetch(\`http://localhost:5000/api/person/delete/\${name}\`, {
+                method: 'DELETE',
+              });
+  
+              const result = await response.json();
+              alert(result.message || 'Person deleted successfully!');
+              document.getElementById('deleteForm').reset();
+            } catch (error) {
+              console.error('Error:', error);
+              alert('Something went wrong. Please try again.');
+            }
+          });
+        </script>
+      </body>
+      </html>
+    `);
+  });
+  
 // Handle Adding a Person
 app.post('/add', async (req, res) => {
   try {
@@ -180,6 +202,28 @@ app.get('/view', async (req, res) => {
     res.status(500).send('Error fetching person.');
   }
 });
+
+app.delete('/api/person/delete/:name', async (req, res) => {
+    try {
+      const { name } = req.params;
+      
+      // Check if the person exists
+      const person = await Person.findOne({ name });
+      if (!person) {
+        return res.status(404).json({ message: 'Person not found' });
+      }
+  
+      // Delete the person
+      await Person.deleteOne({ name });
+  
+      res.json({ message: `${name} has been deleted successfully!` });
+    } catch (error) {
+      console.error('Error deleting person:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+  
+
 
 // Start the server
 app.listen(PORT, () => {
