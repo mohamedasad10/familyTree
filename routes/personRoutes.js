@@ -109,6 +109,18 @@ router.delete('/delete/:name', async (req, res) => {
       res.status(500).json({ message: 'Server error' });
     }
   });
+
+  // Route to get all people names
+router.get('/all', async (req, res) => {
+    try {
+      const people = await Person.find({}, 'name'); // Fetch only names
+      res.status(200).json(people);
+    } catch (error) {
+      console.error('Error fetching people:', error);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+  
   
   
 
